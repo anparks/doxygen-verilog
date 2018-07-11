@@ -61,8 +61,9 @@
 #include "verilogdocgen.h"
 #include "vhdlcode.h"
 #include "plantuml.h"
+
 //#define DEBUGFLOW
-#define theTranslator_vhdlType VhdlDocGen::trVhdlType
+#define theTranslator_vhdlType theTranslator->trVhdlType
 #define COL_SIZE 80
 
 static QDict<QCString> g_vhdlKeyDict0(17,FALSE);
@@ -975,7 +976,6 @@ QCString VhdlDocGen::getClassTitle(const ClassDef *cd)
   int ii=cd->protection();
   pageTitle+=" ";
   pageTitle+=theTranslator_vhdlType(ii+2,TRUE);
-  pageTitle+=" ";
   return pageTitle;
 } // getClassTitle
 
@@ -1891,7 +1891,7 @@ void VhdlDocGen::writeVhdlDeclarations(MemberList* ml,
   VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::GROUP,FALSE),0,FALSE,VhdlDocGen::GROUP);
   VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::INSTANTIATION,FALSE),0,FALSE,VhdlDocGen::INSTANTIATION);
   VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::ALIAS,FALSE),0,FALSE,VhdlDocGen::ALIAS);
-  VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::MISCELLANEOUS),0,FALSE,VhdlDocGen::MISCELLANEOUS);
+  VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::MISCELLANEOUS,TRUE),0,FALSE,VhdlDocGen::MISCELLANEOUS);
 
   // configurations must be added to global file definitions.
   VhdlDocGen::writeVHDLDeclarations(ml,ol,cd,nd,fd,gd,theTranslator_vhdlType(VhdlDocGen::CONFIG,FALSE),0,FALSE,VhdlDocGen::CONFIG);
@@ -2231,19 +2231,21 @@ void VhdlDocGen::writeVHDLDeclaration(MemberDef* mdef,OutputList &ol,
 
       writeLink(mdef,ol);
       ol.docify(" ");
-      ol.insertMemberAlign();
       if (mm==VhdlDocGen::GENERIC)
       {
+        ol.insertMemberAlign();
         ol.startBold();
         VhdlDocGen::formatString(largs,ol,mdef);
         ol.endBold();
       }
       else
       {
+        ol.insertMemberAlignLeft(isAnonymous, false);
         ol.docify(" ");
         ol.startBold();
         VhdlDocGen::formatString(ltype,ol,mdef);
         ol.endBold();
+        ol.insertMemberAlign();
         ol.docify(" ");
         VhdlDocGen::formatString(largs,ol,mdef);
       }
@@ -2398,11 +2400,11 @@ void VhdlDocGen::writeVHDLDeclaration(MemberDef* mdef,OutputList &ol,
   ol.endMemberItem();
   if (!mdef->briefDescription().isEmpty() &&   Config_getBool(BRIEF_MEMBER_DESC) /* && !annMemb */)
   {
- 	 QCString s=mdef->briefDescription();
-	 ol.startMemberDescription(mdef->anchor());
+    QCString s=mdef->briefDescription();
+    ol.startMemberDescription(mdef->anchor(), NULL, mm == VhdlDocGen::PORT);
     ol.generateDoc(mdef->briefFile(),mdef->briefLine(),
-        mdef->getOuterScope()?mdef->getOuterScope():d,
-        mdef,s.data(),TRUE,FALSE,0,TRUE,FALSE);
+    mdef->getOuterScope()?mdef->getOuterScope():d,
+    mdef,s.data(),TRUE,FALSE,0,TRUE,FALSE);
     if (detailsVisible)
     {
       ol.pushGeneratorState();
@@ -2499,7 +2501,7 @@ void VhdlDocGen::writeVHDLDeclarations(MemberList* ml,OutputList &ol,
 
   if (title)
   {
-    ol.startMemberHeader(title);
+    ol.startMemberHeader(title,type == VhdlDocGen::PORT ? 3 : 2);
     ol.parseText(title);
     ol.endMemberHeader();
     ol.docify(" ");
@@ -2563,8 +2565,9 @@ bool VhdlDocGen::writeClassType( ClassDef *& cd,
   else
   {
     int id=cd->protection();
-    QCString qcs = VhdlDocGen::trTypeString(id+2);
+    QCString qcs = theTranslator->trVhdlType(id+2,TRUE);
   }
+
   cname=VhdlDocGen::getClassName(cd);
   ol.startBold();
   ol.writeString(qcs.data());
@@ -2573,6 +2576,7 @@ bool VhdlDocGen::writeClassType( ClassDef *& cd,
   //ol.insertMemberAlign();
   return FALSE;
 }// writeClassLink
+
 
 QCString VhdlDocGen::trVhdlType(uint64 type,bool sing)
 {
@@ -2708,7 +2712,6 @@ QCString VhdlDocGen::trFunctionAndProc()
   else
     return "Functions/Procedures/Processes";
 }
-
 
 /*! writes a link if the string is linkable else a formatted string */
 
@@ -4165,7 +4168,7 @@ void FlowChart::createSVG()
 
   //const  MemberDef *m=VhdlDocGen::getFlowMember();
   //if (m)
-  //  fprintf(stderr,"\n creating flowchart  : %s  %s in file %s \n",VhdlDocGen::trTypeString(m->getMemberSpecifiers()),m->name().data(),m->getFileDef()->name().data());
+  //  fprintf(stderr,"\n creating flowchart  : %s  %s in file %s \n",theTranslator->trVhdlType(m->getMemberSpecifiers(),TRUE),m->name().data(),m->getFileDef()->name().data());
 
   QCString dir=" -o \""+ov+qcs+"\"";
   ov+="/flow_design.dot";

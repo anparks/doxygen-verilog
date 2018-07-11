@@ -102,7 +102,7 @@ static QCString addTemplateNames(const QCString &s,const QCString &n,const QCStr
 //     ol.endParameterName(last==FALSE)
 //     ...
 //     ol.startParameterType(first=FALSE)
-//     ol.endParamtereType
+//     ol.endParameterType
 //     ol.startParameterName
 //     ol.endParameterName(last==TRUE)
 //     ...
@@ -572,7 +572,7 @@ class MemberDefImpl
     bool stat;                // is it a static function?
     bool proto;               // is it a prototype;
     bool docEnumValues;       // is an enum with documented enum values.
-    bool annScope;            // member is part of an annoymous scope
+    bool annScope;            // member is part of an anonymous scope
     bool annUsed;
     bool hasCallGraph;
     bool hasCallerGraph;
@@ -1988,7 +1988,7 @@ void MemberDef::getLabels(QStrList &sl,Definition *container) const
     bool extractPrivate = Config_getBool(EXTRACT_PRIVATE);
     if (optVhdl)
     {
-      sl.append(VhdlDocGen::trTypeString(getMemberSpecifiers()));
+      sl.append(theTranslator->trVhdlType(getMemberSpecifiers(),TRUE));
     }
     else
     {
@@ -2586,7 +2586,7 @@ void MemberDef::writeDocumentation(MemberList *ml,
     else if (getFileDef())      { scopeName=getFileDef()->displayName();      scopedContainer=getFileDef(); }
     ciname = ((GroupDef *)container)->groupTitle();
   }
-  else if (container->definitionType()==TypeFile && getNamespaceDef())
+  else if (container->definitionType()==TypeFile && getNamespaceDef() && lang != SrcLangExt_Python)
   { // member is in a namespace, but is written as part of the file documentation
     // as well, so we need to make sure its label is unique.
     memAnchor.prepend("file_");
@@ -3222,7 +3222,10 @@ QCString MemberDef::memberTypeName() const
 
 void MemberDef::warnIfUndocumented()
 {
-  if (m_impl->memberGroup) return;
+  /*
+   *  Removed bug_303020:
+   *  if (m_impl->memberGroup) return;
+   */
   ClassDef     *cd = getClassDef();
   NamespaceDef *nd = getNamespaceDef();
   FileDef      *fd = getFileDef();

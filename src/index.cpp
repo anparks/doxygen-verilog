@@ -1639,10 +1639,15 @@ static void writeAnnotatedClassList(OutputList &ol)
   ol.endIndexList();
 }
 
+inline bool isId1(int c)
+{
+  return (c<127 && c>31); // printable ASCII character
+}
+
 static QCString letterToLabel(uint startLetter)
 {
   char s[11]; // max 0x12345678 + '\0'
-  if (isId(startLetter)) // printable ASCII character
+  if (isId1(startLetter)) // printable ASCII character
   {
     s[0]=(char)startLetter;
     s[1]=0;
@@ -2507,8 +2512,8 @@ static const CmhlInfo *getCmhlInfo(int hl)
   {
     CmhlInfo("functions",     theTranslator->trAll()),
     CmhlInfo("functions_func",
-        fortranOpt ? theTranslator->trSubprograms() :
-        vhdlOpt    ? VhdlDocGen::trFunctionAndProc() :
+        fortranOpt ? theTranslator->trSubprograms()     :
+        vhdlOpt    ? theTranslator->trFunctionAndProc() :
                      theTranslator->trFunctions()),
     CmhlInfo("functions_vars",theTranslator->trVariables()),
     CmhlInfo("functions_type",theTranslator->trTypedefs()),
@@ -2686,8 +2691,8 @@ static const FmhlInfo *getFmhlInfo(int hl)
   {
     FmhlInfo("globals",     theTranslator->trAll()),
     FmhlInfo("globals_func",
-         fortranOpt ? theTranslator->trSubprograms()  :
-         vhdlOpt    ? VhdlDocGen::trFunctionAndProc() :
+         fortranOpt ? theTranslator->trSubprograms()     :
+         vhdlOpt    ? theTranslator->trFunctionAndProc() :
                       theTranslator->trFunctions()),
     FmhlInfo("globals_vars",theTranslator->trVariables()),
     FmhlInfo("globals_type",theTranslator->trTypedefs()),
@@ -2854,8 +2859,8 @@ static const NmhlInfo *getNmhlInfo(int hl)
   {
     NmhlInfo("namespacemembers",     theTranslator->trAll()),
     NmhlInfo("namespacemembers_func",
-        fortranOpt ? theTranslator->trSubprograms()  :
-        vhdlOpt    ? VhdlDocGen::trFunctionAndProc() :
+        fortranOpt ? theTranslator->trSubprograms()     :
+        vhdlOpt    ? theTranslator->trFunctionAndProc() :
                      theTranslator->trFunctions()),
     NmhlInfo("namespacemembers_vars",theTranslator->trVariables()),
     NmhlInfo("namespacemembers_type",theTranslator->trTypedefs()),
@@ -4021,7 +4026,7 @@ static void writeIndex(OutputList &ol)
       ol.startIndexSection(isClassHierarchyIndex);
       ol.parseText(/*projPrefix+*/
           (fortranOpt ? theTranslator->trCompoundIndexFortran() :
-           vhdlOpt    ? VhdlDocGen::trDesignUnitIndex()         :
+           vhdlOpt    ? theTranslator->trHierarchicalIndex()    :
                         theTranslator->trHierarchicalIndex()
           ));
       ol.endIndexSection(isClassHierarchyIndex);
@@ -4031,7 +4036,7 @@ static void writeIndex(OutputList &ol)
       ol.startIndexSection(isCompoundIndex);
       ol.parseText(/*projPrefix+*/
           (fortranOpt ? theTranslator->trCompoundIndexFortran() :
-              vhdlOpt ? VhdlDocGen::trDesignUnitIndex()         :
+              vhdlOpt ? theTranslator->trDesignUnitIndex()      :
                         theTranslator->trCompoundIndex()
           ));
       ol.endIndexSection(isCompoundIndex);

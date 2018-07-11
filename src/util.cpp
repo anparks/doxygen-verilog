@@ -323,7 +323,6 @@ int guessSection(const char *name)
       n.right(4)==".c++"  ||
       n.right(5)==".java" ||
       n.right(2)==".m"    ||
-      n.right(2)==".M"    ||
       n.right(3)==".mm"   ||
       n.right(3)==".ii"   || // inline
       n.right(4)==".ixx"  ||
@@ -1782,7 +1781,7 @@ QCString removeRedundantWhiteSpace(const QCString &s)
               pc = c;
               i++;
               c = src[i];
-              *dst+=c;
+              *dst++=c;
             }
             else if (c=='"')
             {
@@ -1856,7 +1855,11 @@ QCString removeRedundantWhiteSpace(const QCString &s)
       case '&':
         if (i>0 && isId(pc))
         {
-          *dst++=' ';
+          if (nc != '=')
+          // avoid splitting operator&=
+	  {
+            *dst++=' ';
+          }
         }
         *dst++=c;
         break;
@@ -4191,7 +4194,7 @@ bool getDefs(const QCString &scName,
             //}
           }
         }
-        //printf("  >Succes=%d\n",mdist<maxInheritanceDepth);
+        //printf("  >Success=%d\n",mdist<maxInheritanceDepth);
         if (mdist<maxInheritanceDepth) 
         {
           if (!md->isLinkable() || md->isStrongEnumValue()) 
@@ -7393,23 +7396,23 @@ int nextUtf8CharPosition(const QCString &utf8Str,int len,int startPos)
   {
     if (((uchar)c&0xE0)==0xC0)
     {
-      bytes++; // 11xx.xxxx: >=2 byte character
+      bytes+=1; // 11xx.xxxx: >=2 byte character
     }
     if (((uchar)c&0xF0)==0xE0)
     {
-      bytes++; // 111x.xxxx: >=3 byte character
+      bytes+=2; // 111x.xxxx: >=3 byte character
     }
     if (((uchar)c&0xF8)==0xF0)
     {
-      bytes++; // 1111.xxxx: >=4 byte character
+      bytes+=3; // 1111.xxxx: >=4 byte character
     }
     if (((uchar)c&0xFC)==0xF8)
     {
-      bytes++; // 1111.1xxx: >=5 byte character
+      bytes+=4; // 1111.1xxx: >=5 byte character
     }
     if (((uchar)c&0xFE)==0xFC)
     {
-      bytes++; // 1111.1xxx: 6 byte character
+      bytes+=5; // 1111.1xxx: 6 byte character
     }
   }
   else if (c=='&') // skip over character entities
@@ -7443,11 +7446,10 @@ QCString parseCommentAsText(const Definition *scope,const MemberDef *md,
   root->accept(visitor);
   delete visitor;
   delete root;
-  QCString result = convertCharEntitiesToUTF8(s.data());
+  QCString result = convertCharEntitiesToUTF8(s.data()).stripWhiteSpace();
   int i=0;
   int charCnt=0;
   int l=result.length();
-  bool addEllipsis=FALSE;
   while ((i=nextUtf8CharPosition(result,l,i))<l)
   {
     charCnt++;
@@ -7458,19 +7460,17 @@ QCString parseCommentAsText(const Definition *scope,const MemberDef *md,
     while ((i=nextUtf8CharPosition(result,l,i))<l && charCnt<100)
     {
       charCnt++;
-      if (result.at(i)>=0 && isspace(result.at(i)))
+      if (result.at(i)==',' ||
+          result.at(i)=='.' ||
+          result.at(i)=='!' ||
+          result.at(i)=='?')
       {
-        addEllipsis=TRUE;
-      }
-      else if (result.at(i)==',' || 
-               result.at(i)=='.' || 
-               result.at(i)=='?')
-      {
+        i++; // we want to be "behind" last inspected character
         break;
       }
     }
   }
-  if (addEllipsis || charCnt==100) result=result.left(i)+"...";
+  if ( i < l) result=result.left(i)+"...";
   return result.data();
 }
 
@@ -7915,7 +7915,7 @@ bool readInputFile(const char *fileName,BufStr &inBuf,bool filter,bool isSourceC
 
   int start=0;
   if (size>=2 &&
-      ((inBuf.at(0)==-1 && inBuf.at(1)==-2) || // Litte endian BOM
+      ((inBuf.at(0)==-1 && inBuf.at(1)==-2) || // Little endian BOM
        (inBuf.at(0)==-2 && inBuf.at(1)==-1)    // big endian BOM
       )
      ) // UCS-2 encoded file
@@ -8079,7 +8079,7 @@ QCString externalRef(const QCString &relPath,const QCString &ref,bool href)
   return result;
 }
 
-/** Writes the intensity only bitmap representated by \a data as an image to 
+/** Writes the intensity only bitmap represented by \a data as an image to 
  *  directory \a dir using the colors defined by HTML_COLORSTYLE_*.
  */
 void writeColoredImgData(const char *dir,ColoredImgDataItem data[])
